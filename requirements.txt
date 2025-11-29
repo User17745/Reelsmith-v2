@@ -1,0 +1,9 @@
+praw
+google-generativeai
+pillow
+fastapi
+uvicorn
+python-dotenv
+schedule
+pytest
+requests

@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.env
+.DS_Store
+workspace/
+*.db
+.pytest_cache/
