@@ -15,18 +15,28 @@ class GeminiClient:
         self.model_name = "gemini-2.0-flash" # Default model
         
     def _load_keys(self):
-        keys_file = os.getenv("GEMINI_API_KEYS_FILE")
-        if keys_file and os.path.exists(keys_file):
-            with open(keys_file, "r") as f:
-                return json.load(f)
-        
-        # Fallback to single env var
+        # Try loading from GEMINI_API_KEYS env var (JSON string)
+        keys_env = os.getenv("GEMINI_API_KEYS")
+        if keys_env:
+            try:
+                keys = json.loads(keys_env)
+                if isinstance(keys, list) and len(keys) > 0:
+                    return keys
+            except json.JSONDecodeError:
+                print("Warning: Failed to parse GEMINI_API_KEYS as JSON.")
+
+        # Fallback to single key
         key = os.getenv("GEMINI_API_KEY")
         if key:
             return [key]
             
-        print("Warning: No Gemini API keys found.")
-        return []
+        # Fallback to file (deprecated but kept for compatibility)
+        keys_file = os.getenv("GEMINI_API_KEYS_FILE")
+        if keys_file and os.path.exists(keys_file):
+            with open(keys_file, "r") as f:
+                return json.load(f)
+                
+        raise ValueError("No Gemini API keys found. Set GEMINI_API_KEYS (JSON list) or GEMINI_API_KEY in .env")
 
     def _get_next_key(self):
         if not self.keys:
