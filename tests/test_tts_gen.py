@@ -32,7 +32,8 @@ def test_generate_tts_success(mock_client, tmp_path):
     # Verify file created
     assert (workspace / "output" / f"{post_id}.wav").exists()
     with open(workspace / "output" / f"{post_id}.wav", "rb") as f:
-        assert f.read() == b"fake_audio_bytes"
+        # Check for RIFF header
+        assert f.read(4) == b"RIFF"
     
     # Verify client call
     mock_client.generate_audio.assert_called_once()
