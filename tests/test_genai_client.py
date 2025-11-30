@@ -1,17 +1,26 @@
 import pytest
+import os
 from unittest.mock import MagicMock, patch
 from app.genai_client import GeminiClient
 from google.api_core import exceptions
 
 def test_client_initialization_no_keys():
     with patch.dict('os.environ', {}, clear=True):
-        client = GeminiClient()
-        assert client.keys == []
+        with pytest.raises(ValueError):
+            GeminiClient()
 
-def test_client_initialization_env_key():
-    with patch.dict('os.environ', {'GEMINI_API_KEY': 'test_key'}, clear=True):
+@patch.dict(os.environ, {"GEMINI_API_KEYS": '["key1", "key2"]'})
+def test_load_keys_from_env_list():
+    client = GeminiClient()
+    assert client.keys == ["key1", "key2"]
+
+@patch.dict(os.environ, {"GEMINI_API_KEY": "single_key"})
+def test_load_keys_from_single_env():
+    # Ensure list env is not set
+    with patch.dict(os.environ, {}, clear=True):
+        os.environ["GEMINI_API_KEY"] = "single_key"
         client = GeminiClient()
-        assert client.keys == ['test_key']
+        assert client.keys == ["single_key"]
 
 def test_key_rotation():
     client = GeminiClient()

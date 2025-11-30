@@ -36,7 +36,12 @@ Reelsmith v2 is an automated tool to bulk-generate vertical short videos (9:16) 
     
     Edit `.env`:
     ```ini
+    # Single key
     GEMINI_API_KEY=your_gemini_key
+    
+    # OR List of keys for rotation
+    GEMINI_API_KEYS=["key1", "key2", "key3"]
+    
     REDDIT_CLIENT_ID=your_reddit_client_id
     REDDIT_CLIENT_SECRET=your_reddit_client_secret
     REDDIT_USER_AGENT=reelsmith:v2 (by /u/yourname)
