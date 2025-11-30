@@ -8,6 +8,7 @@ from app.moderate import run_moderation
 from app.script_gen import run_script_gen
 from app.tts_gen import run_tts
 from app.render import run_render
+from app.retention import run_retention
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
@@ -35,6 +36,9 @@ def run_pipeline():
         
         logging.info("Step 7: Render")
         run_render()
+        
+        logging.info("Step 8: Retention")
+        run_retention()
         
         logging.info("Pipeline run complete.")
         
