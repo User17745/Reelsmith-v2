@@ -105,6 +105,7 @@ class GeminiClient:
                 # Check for audio parts
                 for part in response.parts:
                     if hasattr(part, "inline_data") and part.inline_data.mime_type.startswith("audio"):
+                        print(f"Found audio part: {part.inline_data.mime_type}, length: {len(part.inline_data.data)}")
                         return part.inline_data.data
                 
                 # If no audio part, maybe it's not supported by this model/prompt

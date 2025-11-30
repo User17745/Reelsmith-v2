@@ -1,5 +1,6 @@
 import os
 import json
+import wave
 from app.genai_client import client
 
 WORKSPACE_DIR = os.getenv("WORKSPACE_DIR", "workspace")
@@ -35,8 +36,14 @@ def generate_tts(post_id):
             os.makedirs(output_dir, exist_ok=True)
             output_path = os.path.join(output_dir, f"{post_id}.wav")
             
-            with open(output_path, "wb") as f:
-                f.write(audio_bytes)
+            # Write WAV file
+            # Gemini returns raw PCM (audio/L16;rate=24000)
+            with wave.open(output_path, "wb") as wav_file:
+                wav_file.setnchannels(1) # Mono
+                wav_file.setsampwidth(2) # 16-bit = 2 bytes
+                wav_file.setframerate(24000)
+                wav_file.writeframes(audio_bytes)
+                
             print(f"Audio saved to {output_path}")
         else:
             print(f"Failed to generate audio for {post_id}")
