@@ -72,7 +72,8 @@ def generate_video(post_id):
             # FFmpeg concat format
             # file 'path'
             # duration 5
-            f.write(f"file '{image_path}'\n")
+            abs_image_path = os.path.abspath(image_path)
+            f.write(f"file '{abs_image_path}'\n")
             f.write(f"duration {duration}\n")
         
         # Concat demuxer quirk: last file needs to be repeated or it might be skipped/short
@@ -81,7 +82,8 @@ def generate_video(post_id):
         # Let's add the last file again to be safe if the audio is longer.
         if data.get("scenes"):
              last_image = os.path.join(frames_dir, f"scene_{len(data['scenes'])-1:03d}.png")
-             f.write(f"file '{last_image}'\n")
+             abs_last_image = os.path.abspath(last_image)
+             f.write(f"file '{abs_last_image}'\n")
 
     # Run FFmpeg
     output_video_path = os.path.join(output_dir, f"{post_id}.mp4")

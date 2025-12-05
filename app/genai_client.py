@@ -15,7 +15,7 @@ class GeminiClient:
         self.model_name = "gemini-2.0-flash" # Default model
         
     def _load_keys(self):
-        # Try loading from GEMINI_API_KEYS env var (JSON string)
+        # Load from GEMINI_API_KEYS env var (JSON list)
         keys_env = os.getenv("GEMINI_API_KEYS")
         if keys_env:
             try:
@@ -25,18 +25,7 @@ class GeminiClient:
             except json.JSONDecodeError:
                 print("Warning: Failed to parse GEMINI_API_KEYS as JSON.")
 
-        # Fallback to single key
-        key = os.getenv("GEMINI_API_KEY")
-        if key:
-            return [key]
-            
-        # Fallback to file (deprecated but kept for compatibility)
-        keys_file = os.getenv("GEMINI_API_KEYS_FILE")
-        if keys_file and os.path.exists(keys_file):
-            with open(keys_file, "r") as f:
-                return json.load(f)
-                
-        raise ValueError("No Gemini API keys found. Set GEMINI_API_KEYS (JSON list) or GEMINI_API_KEY in .env")
+        raise ValueError("No Gemini API keys found. Set GEMINI_API_KEYS (JSON list) in .env")
 
     def _get_next_key(self):
         if not self.keys:
@@ -105,6 +94,9 @@ class GeminiClient:
         
         for attempt in range(retries):
             try:
+                key = self._get_next_key()
+                self.configure_genai(key)
+                
                 # Use specific TTS model
                 model = genai.GenerativeModel("gemini-2.5-flash-preview-tts")
                 
