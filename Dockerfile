@@ -24,6 +24,7 @@ RUN mkdir -p /workspace/raw /workspace/canonical /workspace/scripts /workspace/o
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV WORKSPACE_DIR=/workspace
+ENV PYTHONPATH=/app
 
 # Default command (can be overridden)
 CMD ["python", "--version"]
