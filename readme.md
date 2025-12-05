@@ -121,4 +121,4 @@ docker run --rm -v $(pwd):/app -e PYTHONPATH=/app reelsmith:v2 pytest
 - `data/`: SQLite database.
 
 ## License
-MIT
+AGPL v3
