@@ -47,36 +47,31 @@ Reelsmith v2 is an automated tool to bulk-generate vertical short videos (9:16) 
     REDDIT_USER_AGENT=reelsmith:v2 (by /u/yourname)
     ```
 
-3.  **Build Docker Image**:
+3.  **Run with Docker Compose**:
     ```bash
-    docker build -t reelsmith:v2 .
+    docker-compose up -d
     ```
+    This will start both the worker and the UI in the background.
 
 ## Usage
 
-### Running the Orchestration Worker
-The worker runs the full pipeline (Harvest -> Score -> Extract -> Moderate -> Script -> TTS -> Render) every hour.
+### Dashboard
+Visit `http://localhost:8000` in your browser to view outputs and manage flagged items.
 
+### Logs
+To view logs for the worker (where the pipeline runs):
 ```bash
-docker run -d \
-  --name reelsmith-worker \
-  -v $(pwd)/workspace:/workspace \
-  -v $(pwd)/data:/data \
-  --env-file .env \
-  reelsmith:v2 python app/worker.py
+docker-compose logs -f worker
 ```
 
-### Running the UI
-The UI allows you to view generated videos and manage flagged content.
-
+To view logs for the UI:
 ```bash
-docker run -d \
-  --name reelsmith-ui \
-  -p 8000:8000 \
-  -v $(pwd)/workspace:/workspace \
-  -v $(pwd)/data:/data \
-  --env-file .env \
-  reelsmith:v2 uvicorn app.main:app --host 0.0.0.0 --port 8000
+docker-compose logs -f ui
+```
+
+### Stopping
+```bash
+docker-compose down
 ```
 
 Visit `http://localhost:8000` in your browser.
