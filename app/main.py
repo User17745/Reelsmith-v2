@@ -14,6 +14,10 @@ output_dir = os.path.join(WORKSPACE_DIR, "output")
 os.makedirs(output_dir, exist_ok=True)
 app.mount("/outputs", StaticFiles(directory=output_dir), name="outputs")
 
+# Ensure DB is initialized
+from app.db import init_db
+init_db()
+
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
     return """
@@ -43,7 +47,7 @@ async def read_root():
             </div>
 
             <script>
-                async def loadFlagged() {
+                async function loadFlagged() {
                     const res = await fetch('/api/flagged');
                     const data = await res.json();
                     const container = document.getElementById('flagged-list');
@@ -62,7 +66,7 @@ async def read_root():
                     });
                 }
 
-                async def loadOutputs() {
+                async function loadOutputs() {
                     const res = await fetch('/api/outputs');
                     const data = await res.json();
                     const container = document.getElementById('outputs-list');
@@ -79,7 +83,7 @@ async def read_root():
                     });
                 }
 
-                async def resolveFlag(postId) {
+                async function resolveFlag(postId) {
                     if (!confirm('Delete this flagged item?')) return;
                     await fetch(`/api/flagged/${postId}/resolve`, { method: 'POST' });
                     loadFlagged();
