@@ -13,6 +13,7 @@ class GeminiClient:
         self.keys = self._load_keys()
         self.current_key_index = 0
         self.model_name = "gemini-2.0-flash" # Default model
+        self.tts_model_name = os.getenv("GEMINI_TTS_MODEL", "gemini-2.5-flash-preview-tts")
         
     def _load_keys(self):
         # Load from GEMINI_API_KEYS env var (JSON list)
@@ -103,21 +104,16 @@ class GeminiClient:
                 self.configure_genai(key)
                 
                 # Use specific TTS model
-                model = genai.GenerativeModel("gemini-2.5-flash-preview-tts")
+                model = genai.GenerativeModel(self.tts_model_name)
                 
                 # We need to request audio output if supported, or just check response parts
                 # Some models might need specific config
                 response = model.generate_content(prompt, generation_config={"response_modalities": ["AUDIO"]})
-                
-                # Check for audio parts
-                for part in response.parts:
-                    if hasattr(part, "inline_data") and part.inline_data.mime_type.startswith("audio"):
-                        print(f"Found audio part: {part.inline_data.mime_type}, length: {len(part.inline_data.data)}")
-                        return part.inline_data.data
-                
-                # If no audio part, maybe it's not supported by this model/prompt
-                # For the sake of the exercise, if we can't get audio, we might mock it or fail.
-                # Let's try to see if we can force it.
+
+                audio_bytes = self._extract_audio_bytes(response)
+                if audio_bytes:
+                    return audio_bytes
+
                 print("No audio part found in response.")
                 return None
                 
@@ -132,5 +128,38 @@ class GeminiClient:
                 time.sleep(1)
         
         raise Exception("Failed to generate audio after retries.")
+
+    def _extract_audio_bytes(self, response):
+        """
+        Attempts to extract audio bytes from common response shapes.
+        """
+        # Direct parts
+        parts = getattr(response, "parts", None)
+        if parts:
+            for part in parts:
+                inline = getattr(part, "inline_data", None)
+                if inline and getattr(inline, "mime_type", "").startswith("audio"):
+                    data = getattr(inline, "data", None)
+                    if data:
+                        print(f"Found audio part: {inline.mime_type}, length: {len(data)}")
+                        return data
+
+        # Candidate-based parts
+        candidates = getattr(response, "candidates", None)
+        if candidates:
+            for candidate in candidates:
+                content = getattr(candidate, "content", None)
+                cand_parts = getattr(content, "parts", None) if content else None
+                if not cand_parts:
+                    continue
+                for part in cand_parts:
+                    inline = getattr(part, "inline_data", None)
+                    if inline and getattr(inline, "mime_type", "").startswith("audio"):
+                        data = getattr(inline, "data", None)
+                        if data:
+                            print(f"Found audio part: {inline.mime_type}, length: {len(data)}")
+                            return data
+
+        return None
 
 client = GeminiClient()
