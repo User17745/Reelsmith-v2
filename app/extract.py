@@ -27,17 +27,21 @@ def sanitize_text(text):
     
     return text.strip()
 
-def extract_canonical(post_id, workspace_dir=WORKSPACE_DIR):
+def extract_canonical_from_raw(raw_path, workspace_dir=WORKSPACE_DIR):
     """
-    Reads raw JSON, sanitizes content, and writes canonical JSON.
+    Reads a raw JSON file, sanitizes content, and writes canonical JSON.
     """
-    raw_path = os.path.join(workspace_dir, "raw", f"{post_id}.json")
     if not os.path.exists(raw_path):
         print(f"Raw file not found: {raw_path}")
         return None
-        
+
     with open(raw_path, "r") as f:
         raw_data = json.load(f)
+
+    post_id = raw_data.get("id")
+    if not post_id:
+        print(f"Raw file missing post id: {raw_path}")
+        return None
         
     canonical_data = {
         "id": raw_data["id"],
@@ -67,6 +71,13 @@ def extract_canonical(post_id, workspace_dir=WORKSPACE_DIR):
         
     return canonical_path
 
+def extract_canonical(post_id, workspace_dir=WORKSPACE_DIR):
+    """
+    Backwards-compatible helper for legacy callers by post_id.
+    """
+    raw_path = os.path.join(workspace_dir, "raw", f"{post_id}.json")
+    return extract_canonical_from_raw(raw_path, workspace_dir=workspace_dir)
+
 def run_extraction():
     """Iterates over all raw files and creates canonical versions."""
     raw_dir = os.path.join(WORKSPACE_DIR, "raw")
@@ -78,13 +89,13 @@ def run_extraction():
     print(f"Extracting {len(files)} files...")
     
     for filename in files:
-        post_id = filename.replace(".json", "")
         try:
-            path = extract_canonical(post_id)
+            raw_path = os.path.join(raw_dir, filename)
+            path = extract_canonical_from_raw(raw_path)
             if path:
-                print(f"Extracted {post_id} -> {path}")
+                print(f"Extracted {os.path.basename(raw_path)} -> {path}")
         except Exception as e:
-            print(f"Error extracting {post_id}: {e}")
+            print(f"Error extracting {filename}: {e}")
 
 if __name__ == "__main__":
     run_extraction()
