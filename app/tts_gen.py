@@ -1,17 +1,23 @@
 import os
 import json
 import wave
-from app.genai_client import client
+import logging
+
+from app.tts_provider import get_tts_client
+from app.config import validate_config, ConfigError
+from app.logging_utils import configure_logging, log_event
 
 WORKSPACE_DIR = os.getenv("WORKSPACE_DIR", "workspace")
+configure_logging()
+logger = logging.getLogger("reelsmith.tts")
 
 def generate_tts(post_id):
     scripts_dir = os.path.join(WORKSPACE_DIR, "scripts")
     script_path = os.path.join(scripts_dir, f"{post_id}.json")
     
     if not os.path.exists(script_path):
-        print(f"Script file not found: {script_path}")
-        return
+        log_event(logger, "tts_missing_script", post_id=post_id, path=script_path)
+        return None
 
     with open(script_path, "r") as f:
         data = json.load(f)
@@ -24,12 +30,13 @@ def generate_tts(post_id):
     
     narration_text = narration_text.strip()
     if not narration_text:
-        print(f"No text found in script for {post_id}")
-        return
+        log_event(logger, "tts_no_text", post_id=post_id)
+        return None
 
     try:
-        print(f"Generating audio for {post_id}...")
-        audio_bytes = client.generate_audio(narration_text)
+        log_event(logger, "tts_generate_start", post_id=post_id)
+        tts_client = get_tts_client()
+        audio_bytes, audio_spec = tts_client.generate_audio(narration_text)
         
         if audio_bytes:
             output_dir = os.path.join(WORKSPACE_DIR, "output")
@@ -37,28 +44,39 @@ def generate_tts(post_id):
             output_path = os.path.join(output_dir, f"{post_id}.wav")
             
             # Write WAV file
-            # Gemini returns raw PCM (audio/L16;rate=24000)
             with wave.open(output_path, "wb") as wav_file:
-                wav_file.setnchannels(1) # Mono
-                wav_file.setsampwidth(2) # 16-bit = 2 bytes
-                wav_file.setframerate(24000)
+                wav_file.setnchannels(audio_spec.channels)
+                wav_file.setsampwidth(audio_spec.sample_width)
+                wav_file.setframerate(audio_spec.sample_rate)
                 wav_file.writeframes(audio_bytes)
-                
-            print(f"Audio saved to {output_path}")
+
+            if os.path.exists(output_path):
+                log_event(logger, "tts_audio_saved", post_id=post_id, path=output_path)
+                return output_path
+            log_event(logger, "tts_audio_missing", post_id=post_id, path=output_path)
+            return None
         else:
-            print(f"Failed to generate audio for {post_id}")
+            log_event(logger, "tts_generate_failed", post_id=post_id)
+            return None
             
     except Exception as e:
-        print(f"Error generating TTS for {post_id}: {e}")
+        log_event(logger, "tts_generate_error", post_id=post_id, error=str(e))
+        return None
 
 def run_tts():
+    try:
+        validate_config()
+    except ConfigError as e:
+        log_event(logger, "tts_config_error", error=str(e))
+        return
+
     scripts_dir = os.path.join(WORKSPACE_DIR, "scripts")
     if not os.path.exists(scripts_dir):
-        print("No scripts directory found.")
+        log_event(logger, "tts_no_scripts_dir", path=scripts_dir)
         return
 
     files = [f for f in os.listdir(scripts_dir) if f.endswith(".json")]
-    print(f"Generating TTS for {len(files)} files...")
+    log_event(logger, "tts_batch_start", count=len(files))
     
     for filename in files:
         post_id = filename.replace(".json", "")

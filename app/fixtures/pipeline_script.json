@@ -1,0 +1,21 @@
+{
+  "tone": "informative",
+  "pacing": "medium",
+  "cta": "Follow for more",
+  "caption_style": "minimal",
+  "length_seconds": 6,
+  "scenes": [
+    {
+      "text": "Fixture scene one.",
+      "start": 0.0,
+      "duration": 3.0,
+      "visual": "Simple fixture card"
+    },
+    {
+      "text": "Fixture scene two.",
+      "start": 3.0,
+      "duration": 3.0,
+      "visual": "Simple fixture card"
+    }
+  ]
+}

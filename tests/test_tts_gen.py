@@ -1,11 +1,13 @@
-import pytest
-from unittest.mock import MagicMock, patch
 import json
-import os
-from app.tts_gen import generate_tts
+import wave
+from unittest.mock import MagicMock, patch
 
-@patch('app.tts_gen.client')
-def test_generate_tts_success(mock_client, tmp_path):
+from app.tts_gen import generate_tts
+from app.tts_provider import AudioSpec
+
+
+@patch('app.tts_gen.get_tts_client')
+def test_generate_tts_success(mock_get_client, tmp_path):
     # Setup mock workspace
     workspace = tmp_path / "workspace"
     (workspace / "scripts").mkdir(parents=True)
@@ -22,8 +24,12 @@ def test_generate_tts_success(mock_client, tmp_path):
     with open(workspace / "scripts" / f"{post_id}.json", "w") as f:
         json.dump(data, f)
         
-    # Mock Gemini response
-    mock_client.generate_audio.return_value = b"fake_audio_bytes"
+    mock_client = MagicMock()
+    mock_client.generate_audio.return_value = (
+        b"fake_audio_bytes",
+        AudioSpec(sample_rate=24000, sample_width=2, channels=1),
+    )
+    mock_get_client.return_value = mock_client
     
     # Run TTS
     with patch('app.tts_gen.WORKSPACE_DIR', str(workspace)):
@@ -34,6 +40,8 @@ def test_generate_tts_success(mock_client, tmp_path):
     with open(workspace / "output" / f"{post_id}.wav", "rb") as f:
         # Check for RIFF header
         assert f.read(4) == b"RIFF"
+    with wave.open(str(workspace / "output" / f"{post_id}.wav"), "rb") as wav_file:
+        assert wav_file.getframerate() == 24000
     
     # Verify client call
     mock_client.generate_audio.assert_called_once()
@@ -41,8 +49,9 @@ def test_generate_tts_success(mock_client, tmp_path):
     assert "Hello world" in args
     assert "This is a test" in args
 
-@patch('app.tts_gen.client')
-def test_generate_tts_no_text(mock_client, tmp_path):
+
+@patch('app.tts_gen.get_tts_client')
+def test_generate_tts_no_text(mock_get_client, tmp_path):
     # Setup mock workspace
     workspace = tmp_path / "workspace"
     (workspace / "scripts").mkdir(parents=True)
@@ -58,5 +67,5 @@ def test_generate_tts_no_text(mock_client, tmp_path):
         generate_tts(post_id)
         
     # Verify client NOT called
-    mock_client.generate_audio.assert_not_called()
+    mock_get_client.assert_not_called()
     assert not (workspace / "output" / f"{post_id}.wav").exists()

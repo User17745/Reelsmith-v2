@@ -9,44 +9,72 @@ from app.script_gen import run_script_gen
 from app.tts_gen import run_tts
 from app.render import run_render
 from app.retention import run_retention
+from app.subtitles import run_subtitles
+from app.config import validate_config, ConfigError
+from app.logging_utils import configure_logging, log_event
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+configure_logging()
+logger = logging.getLogger("reelsmith")
 
 def run_pipeline():
-    logging.info("Starting pipeline run...")
+    log_event(logger, "pipeline_start")
+    pipeline_start = time.monotonic()
+    tts_duration = None
+    subtitles_duration = None
+    render_duration = None
     
     try:
-        logging.info("Step 1: Harvest")
+        validate_config()
+        log_event(logger, "step_start", step="harvest")
         harvest()
         
-        logging.info("Step 2: Score")
+        log_event(logger, "step_start", step="score")
         run_scoring()
         
-        logging.info("Step 3: Extract")
+        log_event(logger, "step_start", step="extract")
         run_extraction()
         
-        logging.info("Step 4: Moderate")
+        log_event(logger, "step_start", step="moderate")
         run_moderation()
         
-        logging.info("Step 5: Script Gen")
+        log_event(logger, "step_start", step="script_gen")
         run_script_gen()
         
-        logging.info("Step 6: TTS")
+        log_event(logger, "step_start", step="tts")
+        tts_start = time.monotonic()
         run_tts()
+        tts_duration = time.monotonic() - tts_start
         
-        logging.info("Step 7: Render")
+        log_event(logger, "step_start", step="subtitles")
+        subtitles_start = time.monotonic()
+        run_subtitles()
+        subtitles_duration = time.monotonic() - subtitles_start
+        
+        log_event(logger, "step_start", step="render")
+        render_start = time.monotonic()
         run_render()
+        render_duration = time.monotonic() - render_start
         
-        logging.info("Step 8: Retention")
+        log_event(logger, "step_start", step="retention")
         run_retention()
         
-        logging.info("Pipeline run complete.")
+        log_event(logger, "pipeline_complete")
+        log_event(
+            logger,
+            "pipeline_metrics",
+            duration_total=time.monotonic() - pipeline_start,
+            duration_tts=tts_duration,
+            duration_subtitles=subtitles_duration,
+            duration_render=render_duration,
+        )
         
+    except ConfigError as e:
+        log_event(logger, "pipeline_failed", error=str(e), error_type="config")
     except Exception as e:
-        logging.error(f"Pipeline failed: {e}")
+        log_event(logger, "pipeline_failed", error=str(e), error_type="runtime")
 
 def start_worker():
-    logging.info("Worker started. Scheduling pipeline every 1 hour.")
+    log_event(logger, "worker_started", schedule="1h")
     # Run once immediately
     run_pipeline()
     
