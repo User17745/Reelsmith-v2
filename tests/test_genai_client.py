@@ -14,7 +14,7 @@ def test_load_keys_from_env_list():
     client = GeminiClient()
     assert client.keys == ["key1", "key2"]
 
-@patch.dict(os.environ, {"GEMINI_API_KEY": "single_key"})
+@patch.dict(os.environ, {"GEMINI_API_KEY": "single_key"}, clear=True)
 def test_load_keys_from_single_env():
     client = GeminiClient()
     assert client.keys == ["single_key"]
