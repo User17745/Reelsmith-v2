@@ -83,8 +83,8 @@ def harvest(subreddits=["AskReddit", "Showerthoughts", "LifeProTips"], limit=10)
                 cursor.execute("""
                     INSERT INTO candidates (
                         post_id, subreddit, title, op, upvotes, comments, 
-                        fetched_at, age_hours, score, raw_path
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        fetched_at, age_hours, created_utc, score, raw_path
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     post.id,
                     str(post.subreddit),
@@ -94,6 +94,7 @@ def harvest(subreddits=["AskReddit", "Showerthoughts", "LifeProTips"], limit=10)
                     post.num_comments,
                     datetime.now(),
                     (time.time() - post.created_utc) / 3600.0,
+                    post.created_utc,
                     0.0, # Initial score, will be updated by scorer
                     raw_path
                 ))

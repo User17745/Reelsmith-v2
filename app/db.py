@@ -30,10 +30,17 @@ def init_db():
         comments INTEGER,
         fetched_at TIMESTAMP,
         age_hours REAL,
+        created_utc REAL,
         score REAL,
         raw_path TEXT
     );
     """)
+
+    # Lightweight migration for existing DBs
+    cursor.execute("PRAGMA table_info(candidates)")
+    columns = {row[1] for row in cursor.fetchall()}
+    if "created_utc" not in columns:
+        cursor.execute("ALTER TABLE candidates ADD COLUMN created_utc REAL")
     
     # Scripts table
     cursor.execute("""
