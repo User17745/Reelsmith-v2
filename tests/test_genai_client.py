@@ -16,15 +16,12 @@ def test_load_keys_from_env_list():
 
 @patch.dict(os.environ, {"GEMINI_API_KEY": "single_key"})
 def test_load_keys_from_single_env():
-    # Ensure list env is not set
-    with patch.dict(os.environ, {}, clear=True):
-        os.environ["GEMINI_API_KEY"] = "single_key"
-        client = GeminiClient()
-        assert client.keys == ["single_key"]
+    client = GeminiClient()
+    assert client.keys == ["single_key"]
 
 def test_key_rotation():
-    client = GeminiClient()
-    client.keys = ['key1', 'key2']
+    with patch.dict(os.environ, {"GEMINI_API_KEYS": '["key1", "key2"]'}):
+        client = GeminiClient()
     
     assert client._get_next_key() == 'key1'
     assert client._get_next_key() == 'key2'
@@ -36,8 +33,8 @@ def test_generate_content_success(mock_model_cls):
     mock_model.generate_content.return_value.text = "Success"
     mock_model_cls.return_value = mock_model
     
-    client = GeminiClient()
-    client.keys = ['key1']
+    with patch.dict(os.environ, {"GEMINI_API_KEYS": '["key1"]'}):
+        client = GeminiClient()
     
     result = client.generate_content("prompt")
     assert result == "Success"
@@ -52,8 +49,8 @@ def test_generate_content_retry_on_429(mock_model_cls):
     ]
     mock_model_cls.return_value = mock_model
     
-    client = GeminiClient()
-    client.keys = ['key1', 'key2']
+    with patch.dict(os.environ, {"GEMINI_API_KEYS": '["key1", "key2"]'}):
+        client = GeminiClient()
     
     # Mock sleep to speed up test
     with patch('time.sleep', return_value=None):

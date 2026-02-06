@@ -25,7 +25,12 @@ class GeminiClient:
             except json.JSONDecodeError:
                 print("Warning: Failed to parse GEMINI_API_KEYS as JSON.")
 
-        raise ValueError("No Gemini API keys found. Set GEMINI_API_KEYS (JSON list) in .env")
+        # Fallback to single key
+        single_key = os.getenv("GEMINI_API_KEY")
+        if single_key:
+            return [single_key]
+
+        raise ValueError("No Gemini API keys found. Set GEMINI_API_KEYS (JSON list) or GEMINI_API_KEY in .env")
 
     def _get_next_key(self):
         if not self.keys:
